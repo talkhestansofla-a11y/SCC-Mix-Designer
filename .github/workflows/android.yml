@@ -5,48 +5,45 @@ on:
     branches: [ "main" ]
   workflow_dispatch:
 
-# این خط به گردش کار اجازه نوشتن (ساخت Release) می‌دهد
 permissions:
   contents: write
 
 jobs:
   build:
-    name: Build APK
+    name: Build SCC Mix Designer APK with launcher icons
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Verify www directory and files
+      - name: Verify web files and launcher icon source images
+        shell: bash
         run: |
-          echo "Checking for www directory..."
-          if [ ! -d "www" ]; then
-            echo "ERROR: www directory not found!"
-            exit 1
-          fi
-          if [ ! -f "www/index.html" ]; then
-            echo "ERROR: www/index.html not found!"
-            exit 1
-          fi
-          echo "www directory and index.html found successfully."
+          set -e
+          test -f www/index.html
+          test -f www/style.css
+          test -f www/app.js
+          test -f capacitor.config.json
+          test -f assets/icon-only.png
+          test -f assets/icon-background.png
+          test -f assets/icon-foreground.png
+          echo "All three source icon images were found:"
+          ls -lh assets/icon-only.png assets/icon-background.png assets/icon-foreground.png
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm install
 
-      - name: Initialize Capacitor
-        run: npx cap init "SCC Mix Designer" "com.scc.mixdesigner" --web-dir=www
-
-      - name: Add Android Platform
-        run: npx cap add android
-
-      - name: Sync Capacitor
-        run: npx cap sync android
+      - name: Verify Capacitor Assets package and JavaScript
+        run: |
+          npm run build
+          npm ls @capacitor/assets
 
       - name: Setup Java JDK
         uses: actions/setup-java@v4
@@ -54,24 +51,51 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Build APK with Gradle
+      - name: Add Android platform
+        run: npx cap add android
+
+      - name: Sync Capacitor project
+        run: npx cap sync android
+
+      - name: Generate Android launcher icons from the three PNG files
+        run: npx capacitor-assets generate --android
+
+      - name: Verify generated launcher icon resources
+        shell: bash
+        run: |
+          set -e
+          RES="android/app/src/main/res"
+          test -f "$RES/mipmap-mdpi/ic_launcher.png"
+          test -f "$RES/mipmap-hdpi/ic_launcher.png"
+          test -f "$RES/mipmap-xhdpi/ic_launcher.png"
+          test -f "$RES/mipmap-xxhdpi/ic_launcher.png"
+          test -f "$RES/mipmap-xxxhdpi/ic_launcher.png"
+          test -f "$RES/mipmap-anydpi-v26/ic_launcher.xml"
+          grep -q 'android:icon="@mipmap/ic_launcher"' android/app/src/main/AndroidManifest.xml
+          echo "Launcher icon files successfully generated:"
+          find "$RES" -maxdepth 2 -type f \( -name 'ic_launcher*' -o -name '*foreground*' -o -name '*background*' \) | sort
+
+      - name: Build APK
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug
 
-      - name: Upload APK Artifact
+      - name: Verify APK output
+        run: test -s android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: SCC-Mix-Designer-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
 
-      - name: Create Release
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.0-${{ github.run_number }}
-          name: Release v1.0.0-${{ github.run_number }}
+          tag_name: v2.1.0-${{ github.run_number }}
+          name: SCC Mix Designer v2.1.0-${{ github.run_number }}
           files: android/app/build/outputs/apk/debug/app-debug.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
