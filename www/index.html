@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5,viewport-fit=cover">
+  <meta name="theme-color" content="#123e59">
+  <meta name="description" content="نرم‌افزار راهنمای طرح اختلاط بتن خودتراکم بر اساس فصل ششم جلد پنجم آیین‌نامه بتن ایران">
+  <link rel="stylesheet" href="style.css">
+  <title>طرح اختلاط بتن خودتراکم | آبا</title>
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand-row">
+      <div class="brand-mark">SCC</div>
+      <div><h1>طرح اختلاط بتن خودتراکم</h1><p>بر اساس فصل ششم جلد پنجم آیین‌نامه بتن ایران</p></div>
+    </div>
+    <div class="offline-label"><span></span> نسخه آفلاین</div>
+  </header>
+  <main class="app-main">
+    <section class="project-strip">
+      <div><small>پروژه فعال</small><strong id="project-name-display">طرح جدید</strong></div>
+      <button id="reset-project" class="btn btn-quiet" type="button">شروع طرح جدید</button>
+    </section>
+    <nav id="tabs" class="step-tabs" aria-label="مراحل طرح"></nav>
+    <section id="screen" class="screen" aria-live="polite"></section>
+    <div class="actions"><button id="prev" class="btn btn-secondary" type="button">گام قبل</button><button id="next" class="btn btn-primary" type="button">گام بعد</button></div>
+    <footer class="app-footer"><span>talkhestan@gmail.com</span><span>گردآورنده: مهدی پناهی تلخستانی</span></footer>
+  </main>
+  <div id="reference-modal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal-panel"><div class="modal-head"><h2 id="modal-title">جدول مرجع آبا</h2><button class="modal-close" type="button" data-close-modal aria-label="بستن">×</button></div><div id="modal-content" class="modal-content"></div></div>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
