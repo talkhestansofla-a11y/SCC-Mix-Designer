@@ -1,0 +1,19 @@
+{
+  "name": "scc-mix-designer",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Offline SCC mix design guide based on Chapter 6 of Iran Concrete Code Volume 5",
+  "scripts": {
+    "build": "node --check www/app.js",
+    "android:sync": "cap sync android",
+    "android:icons": "capacitor-assets generate --android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^5.7.8",
+    "@capacitor/core": "^5.7.8"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^5.7.8"
+  }
+}

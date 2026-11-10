@@ -1,0 +1,6 @@
+{
+  "appId": "com.scc.mixdesigner",
+  "appName": "SCC Mix Designer",
+  "webDir": "www",
+  "bundledWebRuntime": false
+}
