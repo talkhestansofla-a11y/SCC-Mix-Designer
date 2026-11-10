@@ -637,9 +637,90 @@ function attachEvents(){
   $$('[data-step]').forEach(b=>b.addEventListener('click',()=>{state.step=Number(b.dataset.step);render()}));
   $$('[data-table]').forEach(b=>b.addEventListener('click',()=>openTable(b.dataset.table)));
   $$('[data-close-modal]').forEach(b=>b.addEventListener('click',closeModal));
-  if(state.step===0){bind('projectName','projectName');bind('elementType','elementType');bind('thicknessMm','thicknessMm',Number);bind('rebarKg','rebarKg',Number);bind('horizontalDistance','horizontalDistance',Number);bind('maxAggSize','maxAggSize',Number);bind('fc','fc',Number);bind('stdDev','stdDev',Number);bind('fcm','fcm',Number);bind('slumpClass','slumpClass');}
-  if(state.step===1){bind('aggCount','aggCount',Number);$$('[data-aggfield]').forEach(el=>el.addEventListener('input',()=>{const i=Number(el.dataset.agg);state.aggregates[i][el.dataset.aggfield]=el.dataset.aggfield==='name'?el.value:num(el.value);saveState()}));$$('[data-pass]').forEach(el=>el.addEventListener('input',()=>{const i=Number(el.dataset.pass),s=Number(el.dataset.sieve);state.aggregates[i].passes[s]=num(el.value);saveState()}));}
-  if(state.step===2){bind('fullerRow','fullerRow',Number);bind('maxAggSize','maxAggSize',Number);$$('[data-ratio]').forEach(el=>el.addEventListener('input',()=>{state.ratios[Number(el.dataset.ratio)]=num(el.value);saveState();$('#grading-chart').innerHTML=drawGradingChart();const total=state.ratios.slice(0,state.aggCount).reduce((a,b)=>a+num(b),0);$('#ratio-status').textContent=`جمع درصدها: ${fmt(total,1)}٪`;$('#ratio-status').className='status '+(Math.abs(total-100)<0.1?'good':'bad');$('#grading-status').textContent=Math.abs(total-100)<0.1?'منحنی ترکیبی بر اساس نسبت‌های واردشده ترسیم شده است.':'برای تحلیل معتبر، جمع نسبت‌ها باید دقیقاً ۱۰۰٪ باشد.'}));const total=state.ratios.slice(0,state.aggCount).reduce((a,b)=>a+num(b),0);$('#ratio-status').textContent=`جمع درصدها: ${fmt(total,1)}٪`;$('#ratio-status').className='status '+(Math.abs(total-100)<0.1?'good':'bad');$('#grading-status').textContent=Math.abs(total-100)<0.1?'منحنی ترکیبی بر اساس نسبت‌های واردشده ترسیم شده است.':'برای تحلیل معتبر، جمع نسبت‌ها باید دقیقاً ۱۰۰٪ باشد.';}
+  if(state.step===0) {
+  bind('projectName','projectName');
+  bind('elementType','elementType');
+  bind('thicknessMm','thicknessMm',Number);
+  bind('rebarKg','rebarKg',Number);
+  bind('horizontalDistance','horizontalDistance',Number);
+  bind('maxAggSize','maxAggSize',Number);
+  bind('fc','fc',Number);
+
+  bind('stdDev','stdDev',Number);
+  bind('fcm','fcm',Number);
+
+  bind('workshopGrade','workshopGrade');
+
+  const mode=document.getElementById('stdDevMode');
+
+  mode?.addEventListener('change',()=>{
+    state.stdDevMode=mode.value;
+    saveState();
+    render();
+  });
+
+  bind('slumpClass','slumpClass');
+  }
+  if(state.step===1) {
+  bind('aggCount','aggCount',Number);
+
+  $$('[data-aggfield]').forEach(el=>{
+    el.addEventListener('input',()=>{
+      const i=Number(el.dataset.agg);
+      const key=el.dataset.aggfield;
+
+      state.aggregates[i][key] =
+        key==='name' ? el.value : num(el.value);
+
+      saveState();
+    });
+  });
+
+  $$('[data-pass]').forEach(el=>{
+    el.addEventListener('input',()=>{
+      const i=Number(el.dataset.pass);
+      const s=Number(el.dataset.sieve);
+
+      state.aggregates[i].passes[s]=num(el.value);
+      saveState();
+    });
+  });
+  }
+  if(state.step===2) {
+  bind('fullerRow','fullerRow',Number);
+  bind('maxAggSize','maxAggSize',Number);
+
+  const updateRatioStatus=()=>{
+    const total=state.ratios
+      .slice(0,state.aggCount)
+      .reduce((a,b)=>a+num(b),0);
+
+    $('#ratio-status').textContent=
+      `جمع نسبت‌ها: ${fmt(total,1)}٪`;
+
+    $('#ratio-status').className=
+      'status '+(Math.abs(total-100)<0.1?'good':'bad');
+
+    $('#grading-status').textContent=
+      Math.abs(total-100)<0.1
+        ? 'منحنی ترکیبی بر اساس نسبت‌های واردشده ترسیم شده است.'
+        : 'برای تحلیل معتبر، جمع نسبت‌ها باید دقیقاً ۱۰۰٪ باشد.';
+  };
+
+  $$('[data-ratio]').forEach(el=>{
+    el.addEventListener('input',()=>{
+      state.ratios[Number(el.dataset.ratio)]=num(el.value);
+
+      saveState();
+
+      $('#grading-chart').innerHTML=drawGradingChart();
+
+      updateRatioStatus();
+    });
+  });
+
+  updateRatioStatus();
+  }
   if(state.step===3){['testG','testT','testV','blendedDryDensity'].forEach(k=>bind(k,k,Number));const update=()=>{const V=num(state.testV),G=num(state.testG),T=num(state.testT),S=num(state.blendedDryDensity);state.bulkDensity=V>0?(G-T)/V:0;state.voids=(S>0&&state.bulkDensity>0)?100*((S*998-state.bulkDensity)/(S*998)):0;const valid=V>0&&G>T&&S>0&&state.voids>=0&&state.voids<100;$('#void-status').textContent=valid?'محاسبه انجام شد؛ صحت آزمایش و واحدها را کنترل کنید.':'برای محاسبه معتبر، G بزرگ‌تر از T و V و S مثبت وارد کنید.';$('#void-status').className='status '+(valid?'good':'bad');$$('.result-card strong').forEach((el,i)=>{if(i===0)el.textContent=fmt(state.bulkDensity,1);if(i===1)el.textContent=fmt(state.voids,2)});saveState()};['testG','testT','testV','blendedDryDensity'].forEach(k=>$('#'+k)?.addEventListener('input',update));update();}
   if(state.step===4)bind('shapeRank','shapeRank',Number);
   if(state.step===5){bind('sccType','sccType');bind('pasteExtra','pasteExtra',Number);}
