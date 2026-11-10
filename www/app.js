@@ -74,22 +74,80 @@ const TABLES = {
 };
 
 const STEPS = [
-  '۱. اطلاعات اولیه','۲. مشخصات سنگدانه','۳. سهم‌بندی و منحنی','۴. فضای خالی',
-  '۵. شکل دانه','۶. حجم خمیر','۷. آب به سیمان','۸. ترکیب خمیر','۹. مقدار مصالح','۱۰. گزارش نهایی'
+  'اطلاعات اولیه',
+  'مشخصات سنگدانه',
+  'سهم‌بندی و منحنی',
+  'فضای خالی',
+  'شکل دانه',
+  'حجم خمیر',
+  'آب به سیمان',
+  'ترکیب خمیر',
+  'مقدار مصالح',
+  'گزارش نهایی'
 ];
 const SIEVES = [37.5,25,19,12.5,9.5,4.75,2.36,1.18,0.6,0.3,0.15,0.075];
 const SIEVE_NAMES = ['37.5','25','19','12.5','9.5','4.75','2.36','1.18','0.60','0.30','0.15','0.075'];
 
 const defaultState = () => ({
   step:0,
-  projectName:'', elementType:'ستون', thicknessMm:300, rebarKg:80, horizontalDistance:5,
-  maxAggSize:19, fc:30, stdDev:0, fcm:0, slumpClass:'SF2',
-  aggCount:2, aggregates:Array.from({length:4},(_,i)=>({name:i===0?'ماسه':`سنگدانه ${i+1}`,dryDensity:2650,ssd:2670,absorption:1.5,passes:{}})),
-  ratios:[50,50,0,0], fullerRow:2, shapeRank:3,
-  testG:0,testT:0,testV:0, voids:0, bulkDensity:0, blendedDryDensity:2650,
-  sccType:'powder', pasteExtra:15, pasteSpacing:12, pasteFilling:0, pasteBase:0, pasteFinal:0,
-  wc:0.45, cementStrength:42.5, coarseFracture:'C', airPercent:1.5,
-  water:0, cement:0, powder:0, filler:0, vma:0, coarseAgg:0, fineAgg:0
+
+  projectName:'',
+  elementType:'ستون',
+  thicknessMm:300,
+  rebarKg:80,
+  horizontalDistance:5,
+  maxAggSize:19,
+
+  fc:30,
+
+  stdDevMode:'manual',
+  workshopGrade:'ب',
+  stdDev:0,
+  fcm:0,
+
+  slumpClass:'SF2',
+
+  aggCount:2,
+
+  aggregates:Array.from({length:4},(_,i)=>({
+    name:i===0?'ماسه':`سنگدانه ${i+1}`,
+    dryDensity:2650,
+    ssd:2670,
+    absorption:1.5,
+    passes:{}
+  })),
+
+  ratios:[50,50,0,0],
+  fullerRow:2,
+  shapeRank:3,
+
+  testG:0,
+  testT:0,
+  testV:0,
+
+  voids:0,
+  bulkDensity:0,
+  blendedDryDensity:2650,
+
+  sccType:'powder',
+  pasteExtra:15,
+  pasteSpacing:12,
+  pasteFilling:0,
+  pasteBase:0,
+  pasteFinal:0,
+
+  wc:0.45,
+  cementStrength:42.5,
+  coarseFracture:'C',
+
+  airPercent:1.5,
+  water:0,
+  cement:0,
+  powder:0,
+  filler:0,
+  vma:0,
+  coarseAgg:0,
+  fineAgg:0
 });
 let state = loadState();
 function loadState(){try{return {...defaultState(),...JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}')}}catch{return defaultState()}}
@@ -97,7 +155,49 @@ function saveState(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}
 function num(v, fallback=0){const x=Number(v);return Number.isFinite(x)?x:fallback}
 function fmt(v,d=1){return Number.isFinite(v)?v.toFixed(d):'—'}
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function field(label,id,value,type='number',opts={}){return `<div class="field ${opts.full?'full':''}"><label for="${id}">${label}</label>${type==='select'?`<select id="${id}">${opts.options.map(o=>`<option value="${esc(o.value)}" ${String(value)===String(o.value)?'selected':''}>${esc(o.label)}</option>`).join('')}</select>`:`<input id="${id}" type="${type}" value="${esc(value)}" ${opts.min!==undefined?`min="${opts.min}"`:''} ${opts.max!==undefined?`max="${opts.max}"`:''} ${opts.step?`step="${opts.step}"`:''} ${opts.placeholder?`placeholder="${opts.placeholder}"`:''}>`}${opts.help?`<small>${opts.help}</small>`:''}</div>`}
+function field(label,id,value,type='number',opts={}) {
+  const ref = opts.ref
+    ? `<button type="button"
+         class="reference-icon-btn"
+         data-table="${opts.ref}"
+         title="مشاهده جدول مرجع"
+         aria-label="مشاهده جدول مرجع">▤</button>`
+    : '';
+
+  const control = type==='select'
+    ? `<select id="${id}" ${opts.disabled?'disabled':''}>
+        ${opts.options.map(o=>`
+          <option value="${esc(o.value)}"
+          ${String(value)===String(o.value)?'selected':''}>
+          ${esc(o.label)}
+          </option>`).join('')}
+       </select>`
+    : `<input id="${id}" type="${type}"
+        value="${esc(value)}"
+        ${opts.min!==undefined?`min="${opts.min}"`:''}
+        ${opts.max!==undefined?`max="${opts.max}"`:''}
+        ${opts.step?`step="${opts.step}"`:''}
+        ${opts.placeholder?`placeholder="${opts.placeholder}"`:''}
+        ${opts.disabled?'disabled':''}>`;
+
+  return `
+    <div class="field ${opts.full?'full':''} ${ref?'has-reference':''} ${opts.className||''}">
+      <label for="${id}">${label}</label>
+      <div class="field-control">
+        ${control}
+        ${ref}
+      </div>
+      ${opts.help?`<small>${opts.help}</small>`:''}
+    </div>`;
+}
+
+function referenceButton(key) {
+  return `<button type="button"
+    class="reference-icon-btn"
+    data-table="${key}"
+    title="مشاهده جدول مرجع"
+    aria-label="مشاهده جدول مرجع">▤</button>`;
+}
 function referenceButton(key,label='مشاهده جدول اصلی آبا'){return `<button type="button" class="reference-btn" data-table="${key}">${label}</button>`}
 function result(label,value,unit=''){return `<div class="result-card"><small>${label}</small><strong>${value}${unit?` <small>${unit}</small>`:''}</strong></div>`}
 function tableHtml(t){return `<h3>${t.title}</h3>${t.image?`<img class="reference-image" src="${t.image}" alt="${esc(t.title)}" loading="lazy">`:''}<div class="table-wrap"><table class="data-table"><thead><tr>${t.columns.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${t.rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>${t.note?`<div class="section-note">${t.note}</div>`:''}`}
@@ -108,75 +208,423 @@ function effectiveRebar(){return ['تیر','ستون','دیوار'].includes(sta
 function rebarClass(){const v=effectiveRebar();return v<50?'خیلی کم':v<75?'کم':v<100?'متوسط':v<150?'زیاد':v<=200?'خیلی زیاد':'فوق‌العاده زیاد'}
 function thicknessClass(){const v=state.thicknessMm;return v<150?'خیلی نازک':v<300?'نازک':v<600?'نسبتاً نازک':v<900?'نیمه‌ضخیم':v<=1800?'ضخیم':'بسیار ضخیم'}
 function suggestSlump(){const r=effectiveRebar(),t=state.thicknessMm,d=state.horizontalDistance; if(r>200 || (t<150&&r>150))return 'SF3'; if(r>100 || t<300 || d>10)return 'SF2'; if(r>=50 || t<600 || d>5)return 'SF1'; return 'SF0'}
-function renderStep1(){return `<h2>گام اول و دوم ـ اطلاعات پروژه و انتخاب جریان اسلامپ</h2><p class="intro">مشخصات عضو بتنی را وارد کنید. رده اسلامپ پیشنهادی با استفاده از اطلاعات جدول‌های ۱-۶، ۳-۶ و ۴-۶ نمایش داده می‌شود؛ انتخاب نهایی باید با قضاوت مهندسی انجام شود.</p>
-<div class="input-grid">
-${field('نام پروژه','projectName',state.projectName,'text',{full:true,placeholder:'نام پروژه یا عضو بتنی'})}
-${field('نوع عضو بتنی','elementType',state.elementType,'select',{options:['ستون','دیوار','تیر','دال','شالوده','شمع','تعمیر سطح بتنی'].map(x=>({value:x,label:x}))})}
-${field('ضخامت عضو (mm)','thicknessMm',state.thicknessMm,'number',{min:1,step:1})}
-${field('وزن میلگرد در هر مترمکعب عضو (kg/m³)','rebarKg',state.rebarKg,'number',{min:0,step:1,help:'برای تیر، ستون و دیوار، برنامه نصف مقدار واردشده را با جدول ۳-۶ مقایسه می‌کند.'})}
-${field('طول حرکت افقی موردنیاز بتن (m)','horizontalDistance',state.horizontalDistance,'number',{min:0,step:0.5})}
-${field('حداکثر اندازه اسمی سنگدانه (mm)','maxAggSize',state.maxAggSize,'select',{options:[9.5,12.5,19,25,37.5].map(x=>({value:x,label:String(x)}))})}
-${field('مقاومت مشخصه فشاری بتن f’c (MPa)','fc',state.fc,'number',{min:15,max:50,step:0.1})}
-${field('انحراف معیار برآوردشده S (MPa)','stdDev',state.stdDev,'number',{min:0,step:0.1,help:'روش تعیین S و مقاومت هدف به فصل پنجم جلد دوم آبا ارجاع دارد؛ مقدار باید از آن مرجع یا سوابق کارگاه وارد شود.'})}
-${field('مقاومت فشاری متوسط هدف f’cm (MPa)','fcm',state.fcm,'number',{min:0,step:0.1,help:'این مقدار را پس از کنترل روابط فصل پنجم جلد دوم تأیید کنید.'})}
-${field('رده جریان اسلامپ انتخابی','slumpClass',state.slumpClass,'select',{options:['SF0','SF1','SF2','SF3'].map(x=>({value:x,label:x}))})}
-</div>
-${referenceButton('slump','مشاهده جدول ۱-۶ ـ رده‌های جریان اسلامپ')}${referenceButton('rebar','مشاهده جدول ۳-۶ ـ تراکم میلگرد')}${referenceButton('thickness','مشاهده جدول ۴-۶ ـ ضخامت عضو')}
-<div class="result-grid">${result('رده تراکم میلگرد',rebarClass())}${result('رده ضخامت عضو',thicknessClass())}${result('رده اسلامپ پیشنهادی',suggestSlump())}</div>
-<div class="warning-note">محدودیت حداکثر اندازه سنگدانه نیز باید کنترل شود: حداکثر اندازه اسمی نباید از یک‌پنجم فاصله جداره قالب، یک‌سوم ضخامت دال/عضو یک‌طرف قالب، سه‌چهارم فاصله آزاد میلگردها یا سه‌چهارم پوشش بتن بیشتر باشد. داده‌های هندسی لازم برای این کنترل هنوز باید در فرم پروژه تکمیل شوند.</div>`}
+function renderStep1() {
+  const autoMode = state.stdDevMode === 'auto';
 
+  return `
+  <h2>اطلاعات پروژه و انتخاب جریان اسلامپ</h2>
+
+  <div class="input-grid">
+
+    ${field(
+      'نام پروژه',
+      'projectName',
+      state.projectName,
+      'text',
+      {
+        full:true,
+        placeholder:'نام پروژه یا عضو بتنی'
+      }
+    )}
+
+    ${field(
+      'نوع عضو بتنی',
+      'elementType',
+      state.elementType,
+      'select',
+      {
+        options:[
+          'ستون','دیوار','تیر','دال',
+          'شالوده','شمع','تعمیر سطح بتنی'
+        ].map(x=>({value:x,label:x}))
+      }
+    )}
+
+    ${field(
+      'ضخامت عضو (mm)',
+      'thicknessMm',
+      state.thicknessMm,
+      'number',
+      {
+        min:1,
+        step:1,
+        ref:'thickness'
+      }
+    )}
+
+    ${field(
+      'وزن میلگرد در هر مترمکعب (kg/m³)',
+      'rebarKg',
+      state.rebarKg,
+      'number',
+      {
+        min:0,
+        step:1,
+        ref:'rebar',
+        help:'برای تیر، ستون و دیوار، مقدار معادل نصف وزن واردشده در نظر گرفته می‌شود.'
+      }
+    )}
+
+    ${field(
+      'طول حرکت افقی بتن (m)',
+      'horizontalDistance',
+      state.horizontalDistance,
+      'number',
+      {
+        min:0,
+        step:0.5
+      }
+    )}
+
+    ${field(
+      'حداکثر اندازه اسمی سنگدانه (mm)',
+      'maxAggSize',
+      state.maxAggSize,
+      'select',
+      {
+        options:[9.5,12.5,19,25,37.5]
+          .map(x=>({value:x,label:String(x)}))
+      }
+    )}
+
+    ${field(
+      'مقاومت مشخصه فشاری بتن f’c (MPa)',
+      'fc',
+      state.fc,
+      'number',
+      {
+        min:15,
+        max:50,
+        step:0.1
+      }
+    )}
+
+    ${field(
+      'روش تعیین انحراف معیار',
+      'stdDevMode',
+      state.stdDevMode,
+      'select',
+      {
+        options:[
+          {value:'manual',label:'دستی'},
+          {value:'auto',label:'محاسبه خودکار'}
+        ]
+      }
+    )}
+
+    ${field(
+      'رتبه کارگاه',
+      'workshopGrade',
+      state.workshopGrade,
+      'select',
+      {
+        className:'workshop-grade',
+        options:[
+          {value:'الف',label:'الف'},
+          {value:'ب',label:'ب'},
+          {value:'ج',label:'ج'}
+        ]
+      }
+    )}
+
+    ${field(
+      'انحراف معیار S (MPa)',
+      'stdDev',
+      state.stdDev,
+      'number',
+      {
+        min:0,
+        step:0.1,
+        disabled:autoMode
+      }
+    )}
+
+    ${field(
+      'مقاومت فشاری متوسط هدف f’cm (MPa)',
+      'fcm',
+      state.fcm,
+      'number',
+      {
+        min:0,
+        step:0.1,
+        className:'target-strength',
+        disabled:autoMode
+      }
+    )}
+
+    ${field(
+      'رده جریان اسلامپ انتخابی',
+      'slumpClass',
+      state.slumpClass,
+      'select',
+      {
+        ref:'slump',
+        options:['SF0','SF1','SF2','SF3']
+          .map(x=>({value:x,label:x}))
+      }
+    )}
+
+  </div>
+
+  ${autoMode ? `
+    <div class="formula-panel">
+      <strong>محاسبه خودکار مقاومت هدف</strong>
+
+      <div>
+        مقاومت مشخصه:
+        <b>f’c = ${fmt(num(state.fc),1)} MPa</b>
+      </div>
+
+      <div>
+        رتبه کارگاه:
+        <b>${esc(state.workshopGrade)}</b>
+      </div>
+
+      <div>
+        رابطه تعیین S و رابطه تعیین f’cm باید مطابق فصل پنجم جلد دوم آبا انتخاب شوند.
+      </div>
+
+      <div class="formula-status">
+        جدول و روابط مرجع جلد دوم در فایل فعلی پروژه موجود نیست؛
+        بنابراین محاسبه خودکار تا دریافت مرجع فعال نمی‌شود.
+      </div>
+    </div>
+  ` : `
+    <div class="formula-panel">
+      <strong>روش دستی</strong>
+      مقادیر S و f’cm را با استفاده از سوابق کارگاه و مرجع آیین‌نامه وارد کنید.
+    </div>
+  `}
+
+  `;
+  }
 function ensureAggs(){if(!Array.isArray(state.aggregates))state.aggregates=defaultState().aggregates;while(state.aggregates.length<4)state.aggregates.push({name:`سنگدانه ${state.aggregates.length+1}`,dryDensity:2650,ssd:2670,absorption:1.5,passes:{}});}
-function renderStep2(){ensureAggs();let rows='';for(let j=0;j<SIEVES.length;j++){rows+=`<tr><td>${SIEVE_NAMES[j]}</td>${Array.from({length:state.aggCount},(_,i)=>`<td><input type="number" min="0" max="100" step="0.1" data-pass="${i}" data-sieve="${SIEVES[j]}" value="${state.aggregates[i].passes[SIEVES[j]]??0}"></td>`).join('')}</tr>`}
-return `<h2>گام سوم ـ مشخصات و دانه‌بندی سنگدانه‌ها</h2><p class="intro">درصد عبوری تجمعی هر سنگدانه را وارد کنید. اطلاعات هر منبع جداگانه نگهداری می‌شود و در گام بعد با نسبت‌های اختلاط ترکیب خواهد شد.</p>
-<div class="input-grid">${field('تعداد منابع سنگدانه','aggCount',state.aggCount,'select',{options:[1,2,3,4].map(x=>({value:x,label:String(x)}))})}</div>
-<div class="table-wrap"><table class="data-table"><thead><tr><th>مشخصه</th>${Array.from({length:state.aggCount},(_,i)=>`<th>${fieldAggName(i)}</th>`).join('')}</tr></thead><tbody>
-${rows}
-<tr><th>چگالی خشک (kg/m³)</th>${Array.from({length:state.aggCount},(_,i)=>`<td><input type="number" data-aggfield="dryDensity" data-agg="${i}" value="${state.aggregates[i].dryDensity}" step="1"></td>`).join('')}</tr>
-<tr><th>چگالی SSD (kg/m³)</th>${Array.from({length:state.aggCount},(_,i)=>`<td><input type="number" data-aggfield="ssd" data-agg="${i}" value="${state.aggregates[i].ssd}" step="1"></td>`).join('')}</tr>
-<tr><th>جذب آب (%)</th>${Array.from({length:state.aggCount},(_,i)=>`<td><input type="number" data-aggfield="absorption" data-agg="${i}" value="${state.aggregates[i].absorption}" step="0.1"></td>`).join('')}</tr>
-</tbody></table></div>
-${referenceButton('texture','مشاهده جدول ۲-۶ ـ بافت دانه‌بندی')}
-<div class="section-note">دانه‌بندی باید به‌صورت درصد عبوری تجمعی وارد شود. برای هر الک، مقدار عبوری نباید از الک درشت‌تر بیشتر باشد؛ برنامه پس از ورود داده‌ها این سازگاری را کنترل می‌کند.</div>`}
+function ensureAggs() {
+  if(!Array.isArray(state.aggregates))
+    state.aggregates=defaultState().aggregates;
+
+  while(state.aggregates.length<4) {
+    state.aggregates.push({
+      name:`سنگدانه ${state.aggregates.length+1}`,
+      dryDensity:2650,
+      ssd:2670,
+      absorption:1.5,
+      passes:{}
+    });
+  }
+}
+
+function renderStep2() {
+  ensureAggs();
+
+  let rows='';
+
+  rows += `
+    <tr>
+      <th>نام سنگدانه</th>
+      ${Array.from({length:state.aggCount},(_,i)=>`
+        <td>
+          <input class="aggregate-name-input"
+            type="text"
+            data-aggfield="name"
+            data-agg="${i}"
+            value="${esc(state.aggregates[i].name)}">
+        </td>
+      `).join('')}
+    </tr>
+  `;
+
+  const properties = [
+    ['چگالی خشک','dryDensity','1'],
+    ['چگالی SSD','ssd','1'],
+    ['جذب آب (%)','absorption','0.1']
+  ];
+
+  properties.forEach(([label,key,step])=>{
+    rows+=`
+      <tr>
+        <th>${label}</th>
+        ${Array.from({length:state.aggCount},(_,i)=>`
+          <td>
+            <input type="number"
+              data-aggfield="${key}"
+              data-agg="${i}"
+              value="${state.aggregates[i][key]}"
+              step="${step}">
+          </td>
+        `).join('')}
+      </tr>
+    `;
+  });
+
+  for(let j=0;j<SIEVES.length;j++) {
+    rows+=`
+      <tr>
+        <td class="sieve-cell">${SIEVE_NAMES[j]}</td>
+        ${Array.from({length:state.aggCount},(_,i)=>`
+          <td>
+            <input type="number"
+              min="0"
+              max="100"
+              step="0.1"
+              data-pass="${i}"
+              data-sieve="${SIEVES[j]}"
+              value="${state.aggregates[i].passes[SIEVES[j]]??0}">
+          </td>
+        `).join('')}
+      </tr>
+    `;
+  }
+
+  return `
+    <h2>مشخصات و دانه‌بندی سنگدانه‌ها</h2>
+
+    <div class="input-grid">
+      ${field(
+        'تعداد سنگدانه',
+        'aggCount',
+        state.aggCount,
+        'select',
+        {
+          options:[1,2,3,4].map(x=>({
+            value:x,
+            label:String(x)
+          }))
+        }
+      )}
+    </div>
+
+    <div class="table-wrap aggregate-table-wrap">
+      <table class="data-table aggregate-table">
+        <colgroup>
+          <col class="spec-col">
+          ${Array.from({length:state.aggCount},()=>'<col>').join('')}
+        </colgroup>
+
+        <thead>
+          <tr>
+            <th>مشخصه</th>
+            ${Array.from({length:state.aggCount},(_,i)=>`
+              <th>سنگدانه ${i+1}</th>
+            `).join('')}
+          </tr>
+        </thead>
+
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+}
 function fieldAggName(i){return `<input type="text" aria-label="نام سنگدانه ${i+1}" data-aggfield="name" data-agg="${i}" value="${esc(state.aggregates[i].name)}" style="width:90px">`}
 
 function fuller(d,D,n){if(d<=0.075)return 0;if(d>=D)return 100;const dn=Math.pow(d,n),d0=Math.pow(0.075,n),Dn=Math.pow(D,n);return 100*(dn-d0)/(Dn-d0)}
 function mixedPassing(s){let v=0;for(let i=0;i<state.aggCount;i++)v+=(num(state.ratios[i])/100)*num(state.aggregates[i].passes[s]);return v}
-function renderStep3(){const r=TABLES.fuller.rows[state.fullerRow-1];const low=num(r[2]),high=num(r[3]);const ratioRows=Array.from({length:state.aggCount},(_,i)=>`<div class="field"><label>${esc(state.aggregates[i].name)} (%)</label><input type="number" min="0" max="100" step="1" data-ratio="${i}" value="${state.ratios[i]??0}"></div>`).join('');
-return `<h2>گام سوم ـ سهم‌بندی و منحنی دانه‌بندی مطلوب</h2><p class="intro">نسبت سنگدانه‌ها را طوری تعیین کنید که منحنی ترکیبی تا حد امکان در محدوده منحنی مطلوب جدول ۵-۶ قرار گیرد. درصدها باید جمعاً ۱۰۰ باشند.</p>
-<div class="input-grid">${field('ردیف کاربرد جدول ۵-۶','fullerRow',state.fullerRow,'select',{options:TABLES.fuller.rows.map((x,i)=>({value:i+1,label:`ردیف ${i+1}`}))})}${field('حداکثر اندازه سنگدانه D (mm)','maxAggSize',state.maxAggSize,'number',{min:1,step:0.1})}</div>
-${referenceButton('texture','مشاهده جدول ۲-۶ ـ طبقه‌بندی بافت')}${referenceButton('fuller','مشاهده جدول ۵-۶ ـ انتخاب n و کاربردها')}
-<h3>درصد اختلاط منابع سنگدانه</h3><div class="input-grid">${ratioRows}</div><div id="ratio-status" class="status"></div>
-<div class="result-grid">${result('توان پایین n',fmt(low,2))}${result('توان بالا n',fmt(high,2))}${result('توان میانی n',fmt((low+high)/2,3))}</div>
-<div class="chart-box" id="grading-chart">${drawGradingChart()}</div><div class="chart-legend"><span><i class="legend-dot" style="background:#0d7188"></i>منحنی ترکیبی واقعی</span><span><i class="legend-dot" style="background:#d17a28"></i>کران پایین</span><span><i class="legend-dot" style="background:#9b4a76"></i>کران بالا</span></div>
-<div id="grading-status" class="status"></div>
-<div class="section-note">رابطه فولر ـ تامسون اصلاح‌شده در این فصل، مرز ریزدانه را ۰٫۰۷۵ میلی‌متر در نظر می‌گیرد: P = (dⁿ − 0.075ⁿ) / (Dⁿ − 0.075ⁿ) × 100. در نتیجه در کد جدید نیز مرز ۰٫۰۷۵ میلی‌متر حفظ شده است.</div>`}
+function renderStep3() {
+  const r=TABLES.fuller.rows[state.fullerRow-1];
+  const ratioRows=Array.from(
+    {length:state.aggCount},
+    (_,i)=>`
+      <div class="ratio-field">
+        <label>${esc(state.aggregates[i].name)} (%)</label>
+        <input type="number"
+          min="0"
+          max="100"
+          step="1"
+          data-ratio="${i}"
+          value="${state.ratios[i]??0}">
+      </div>
+    `
+  ).join('');
+
+  return `
+    <h2>سهم‌بندی و منحنی دانه‌بندی مطلوب</h2>
+
+    <div class="input-grid">
+      ${field(
+        'انتخاب منحنی',
+        'fullerRow',
+        state.fullerRow,
+        'select',
+        {
+          options:TABLES.fuller.rows.map((x,i)=>({
+            value:i+1,
+            label:`منحنی ${i+1}`
+          })),
+          ref:'fuller'
+        }
+      )}
+
+      ${field(
+        'حداکثر اندازه سنگدانه D (mm)',
+        'maxAggSize',
+        state.maxAggSize,
+        'number',
+        {
+          min:1,
+          step:0.1
+        }
+      )}
+    </div>
+
+    <h3>نسبت‌های سنگدانه</h3>
+
+    <div class="input-grid">
+      ${ratioRows}
+    </div>
+
+    <div id="ratio-status" class="status"></div>
+
+    <div class="chart-box" id="grading-chart">
+      ${drawGradingChart()}
+    </div>
+
+    <div class="chart-legend">
+      <span>
+        <i class="legend-dot" style="background:#0d7188"></i>
+        منحنی ترکیبی واقعی
+      </span>
+
+      <span>
+        <i class="legend-dot" style="background:#d17a28"></i>
+        کران پایین
+      </span>
+
+      <span>
+        <i class="legend-dot" style="background:#9b4a76"></i>
+        کران بالا
+      </span>
+    </div>
+
+    <div id="grading-status" class="status"></div>
+  `;
+}
 function drawGradingChart(){const W=720,H=280,L=54,R=15,T=15,B=42;const xMin=Math.log10(.075),xMax=Math.log10(37.5);const X=d=>L+(Math.log10(d)-xMin)/(xMax-xMin)*(W-L-R);const Y=p=>T+(100-p)/100*(H-T-B);const D=num(state.maxAggSize,19);const row=TABLES.fuller.rows[state.fullerRow-1];const ns=[num(row[2]),num(row[3])];const pts=SIEVES.map(s=>({s,p:mixedPassing(s)}));const path=arr=>arr.map((p,i)=>`${i?'L':'M'}${X(p.s).toFixed(1)},${Y(p.p).toFixed(1)}`).join(' ');const ideal=n=>SIEVES.map(s=>({s,p:fuller(s,D,n)})).reverse();let grid='';for(let p=0;p<=100;p+=20)grid+=`<line x1="${L}" y1="${Y(p)}" x2="${W-R}" y2="${Y(p)}" stroke="#e7edf1"/><text x="${L-8}" y="${Y(p)+4}" text-anchor="end" font-size="10" fill="#657b8a">${p}</text>`;const ticks=[.075,.15,.3,.6,1.18,2.36,4.75,9.5,12.5,19,25,37.5];for(const d of ticks)grid+=`<line x1="${X(d)}" y1="${T}" x2="${X(d)}" y2="${H-B}" stroke="#f0f3f5"/><text x="${X(d)}" y="${H-18}" text-anchor="middle" font-size="9" fill="#657b8a">${d}</text>`;return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="نمودار لگاریتمی دانه‌بندی"><rect x="${L}" y="${T}" width="${W-L-R}" height="${H-T-B}" fill="#fff" stroke="#cbd8e1"/>${grid}<path d="${path(ideal(ns[0]))}" fill="none" stroke="#d17a28" stroke-width="2" stroke-dasharray="6 4"/><path d="${path(ideal(ns[1]))}" fill="none" stroke="#9b4a76" stroke-width="2" stroke-dasharray="6 4"/><path d="${path(pts)}" fill="none" stroke="#0d7188" stroke-width="3"/>${pts.map(p=>`<circle cx="${X(p.s)}" cy="${Y(p.p)}" r="3" fill="#0d7188"/>`).join('')}<text x="${W/2}" y="${H-2}" text-anchor="middle" font-size="10" fill="#526b7a">اندازه الک (mm) ـ محور لگاریتمی</text><text x="14" y="${H/2}" transform="rotate(-90 14 ${H/2})" text-anchor="middle" font-size="10" fill="#526b7a">درصد عبوری</text></svg>`}
 
-function renderStep4(){return `<h2>گام پنجم ـ تعیین درصد فضای خالی مخلوط سنگدانه</h2><p class="intro">مطابق فصل ششم، چگالی انبوهی خشک مخلوط سنگدانه باید در حالت متراکم‌شده با میله و بر اساس روش استاندارد ملی ایران ۴۰۸۳ تعیین شود. میانگین‌گیری از چگالی انبوهی منابع جداگانه جایگزین این آزمایش نیست.</p>
+function renderStep4(){return `<h2>تعیین درصد فضای خالی مخلوط سنگدانه</h2><p class="intro">مطابق فصل ششم، چگالی انبوهی خشک مخلوط سنگدانه باید در حالت متراکم‌شده با میله و بر اساس روش استاندارد ملی ایران ۴۰۸۳ تعیین شود. میانگین‌گیری از چگالی انبوهی منابع جداگانه جایگزین این آزمایش نیست.</p>
 <div class="input-grid">${field('جرم سنگدانه خشک به‌همراه ظرف G (kg)','testG',state.testG,'number',{min:0,step:0.001})}${field('جرم ظرف T (kg)','testT',state.testT,'number',{min:0,step:0.001})}${field('حجم ظرف V (m³)','testV',state.testV,'number',{min:0,step:0.0001,help:'حجم کالیبره‌شده ظرف آزمایش را وارد کنید.'})}${field('چگالی خشک مخلوط سنگدانه S (kg/m³)','blendedDryDensity',state.blendedDryDensity,'number',{min:1,step:1,help:'مقدار چگالی خشک مخلوط واقعی را بر اساس روش آزمایشگاهی و استاندارد مربوط وارد کنید؛ این مقدار نباید با چگالی SSD جایگزین شود.'})}</div>
 <div class="section-note">M = (G − T) / V ؛ درصد فضای خالی = 100 × [(S × W − M) / (S × W)] ؛ در دمای متعارف W = 998 kg/m³.</div>
 <div class="result-grid">${result('چگالی انبوهی خشک M',fmt(state.bulkDensity,1),'kg/m³')}${result('درصد فضای خالی',fmt(state.voids,2),'%')}</div><div id="void-status" class="status"></div>
 <div class="warning-note">برای نتیجه معتبر، G و T باید بر حسب kg و V بر حسب m³ باشند و آزمایش باید روی ترکیب واقعی سنگدانه‌ها انجام شود. چگالی خشک S نیز باید با مبنای خشک و استاندارد آزمایش تعیین شده باشد.</div>`}
 
-function renderStep5(){return `<h2>گام ششم ـ انتخاب رده شکل و گوشه‌داری سنگدانه‌ها (Rs-A)</h2><p class="intro">رده باید برای ترکیب واقعی سنگدانه‌های ریز و درشت ارزیابی شود؛ صرفاً انتخاب یک عدد بدون بررسی شکل و گوشه‌داری کافی نیست.</p>${referenceButton('shape','مشاهده جدول ۶-۶ ـ شکل‌ها و نمونه‌های سنگدانه')}
+function renderStep5(){return `<h2>انتخاب رده شکل و گوشه‌داری سنگدانه‌ها (Rs-A)</h2><p class="intro">رده باید برای ترکیب واقعی سنگدانه‌های ریز و درشت ارزیابی شود؛ صرفاً انتخاب یک عدد بدون بررسی شکل و گوشه‌داری کافی نیست.</p>${referenceButton('shape','مشاهده جدول ۶-۶ ـ شکل‌ها و نمونه‌های سنگدانه')}
 <div class="shape-grid">${[1,2,3,4,5].map(n=>`<div class="shape-card ${state.shapeRank===n?'selected':''}"><b>${n}</b>${['خوب و گرد شده','گرد شده','میانه','گوشه‌دار','بسیار گوشه‌دار'][n-1]}</div>`).join('')}</div>
 <div class="input-grid">${field('رده انتخاب‌شده Rs-A','shapeRank',state.shapeRank,'select',{options:[1,2,3,4,5].map(n=>({value:n,label:`رده ${n}`}))})}</div>
 <div class="result-grid">${result('رده انتخابی',state.shapeRank)}${result('توصیه آیین‌نامه','۲ یا ۳')}${result('حداکثر رده توصیه‌شده','۴')}</div>
 <div class="warning-note">در جدول ۶-۶ رده ۱ مناسب‌ترین شکل و گردشدگی و رده ۵ ضعیف‌ترین شکل و بیشترین گوشه‌داری را نشان می‌دهد. ارزیابی برای هر ترکیب سنگدانه باید جداگانه انجام شود.</div>`}
 
 function calcPaste(){const spacing=8+2*(num(state.shapeRank,3)-1);const voids=num(state.voids);const filling=100-((100-spacing)*(100-voids)/100);let min,max;if(state.sccType==='vma'){min=5;max=7}else if(state.sccType==='combined'){min=6;max=15}else{min=10;max=20}const extra=Math.min(max,Math.max(min,num(state.pasteExtra,min)));state.pasteSpacing=spacing;state.pasteFilling=filling;state.pasteExtra=extra;state.pasteBase=filling;state.pasteFinal=filling*(1+extra/100);return {spacing,filling,extra,min,max,final:state.pasteFinal}}
-function renderStep6(){const c=calcPaste();return `<h2>گام هفتم ـ محاسبه حجم خمیر</h2><p class="intro">حجم خمیر باید فضای خالی بین سنگدانه‌های متراکم‌شده را پر کند و علاوه بر آن، فاصله لازم برای روانکاری و حرکت سنگدانه‌ها را تأمین کند.</p>
+function renderStep6(){const c=calcPaste();return `<h2>محاسبه حجم خمیر</h2><p class="intro">حجم خمیر باید فضای خالی بین سنگدانه‌های متراکم‌شده را پر کند و علاوه بر آن، فاصله لازم برای روانکاری و حرکت سنگدانه‌ها را تأمین کند.</p>
 <div class="section-note">Vpaste filling = 100 − [(100 − Vpaste spacing) × (100 − %Voids) / 100]</div><div class="section-note">Vpaste spacing = 8 + 2 × (Rs-A − 1)</div>
 <div class="result-grid">${result('فضای خالی سنگدانه',fmt(state.voids,2),'%')}${result('حجم خمیر فاصله‌گذار',fmt(c.spacing,1),'%')}${result('حداقل حجم خمیر پرکننده',fmt(c.filling,2),'%')}</div>
 <div class="input-grid">${field('نوع بتن خودتراکم','sccType',state.sccType,'select',{options:[{value:'powder',label:'پودری'},{value:'vma',label:'دارای VMA'},{value:'combined',label:'ترکیبی'}]})}${field(`افزایش حجم خمیر (%) ـ بازه ${c.min} تا ${c.max}`,'pasteExtra',state.pasteExtra,'number',{min:c.min,max:c.max,step:0.5,help:'پودری: ۱۰ تا ۲۰٪؛ دارای VMA: ۵ تا ۷٪؛ ترکیبی: ۶ تا ۱۵٪. مقدار نهایی با توجه به قابلیت عبور و تراکم میلگرد انتخاب شود.'})}</div>
 <div class="result-grid">${result('حجم خمیر نهایی',fmt(c.final,2),'% حجمی بتن')}</div>
 <div class="warning-note">اگر آزمایش فضای خالی در گام پنجم انجام نشده باشد، نتیجه این گام صرفاً نمایشی است و برای ادامه محاسبات معتبر نیست.</div>`}
 
-function renderStep7(){return `<h2>گام هشتم ـ تعیین نسبت آب آزاد به سیمان</h2><p class="intro">مطابق متن فصل ششم، نسبت آب آزاد به سیمان با توجه به نوع و رده مقاومتی سیمان و درصد شکستگی سنگدانه درشت از شکل ۷-۶ تعیین می‌شود.</p>
+function renderStep7(){return `<h2>تعیین نسبت آب آزاد به سیمان</h2><p class="intro">مطابق متن فصل ششم، نسبت آب آزاد به سیمان با توجه به نوع و رده مقاومتی سیمان و درصد شکستگی سنگدانه درشت از شکل ۷-۶ تعیین می‌شود.</p>
 <div class="input-grid">${field('رده سیمان','cementStrength',state.cementStrength,'select',{options:[{value:32.5,label:'۳۲۵'},{value:42.5,label:'۴۲۵'},{value:52.5,label:'۵۲۵'}]})}${field('نوع سنگدانه درشت','coarseFracture',state.coarseFracture,'select',{options:[{value:'C',label:'C ـ شکسته/تیزگوشه'},{value:'R',label:'R ـ گردگوشه'}]})}${field('مقاومت ملات سیمان (MPa)','cementStrengthLab',42.5,'number',{min:1,step:0.1})}${field('نسبت آب آزاد به سیمان w/c','wc',state.wc,'number',{min:0.2,max:0.8,step:0.01,help:'ورودی موقت؛ مقدار نهایی باید از شکل ۷-۶ با درونیابی/برونیابی استخراج و تأیید شود.'})}</div>
 <div class="warning-note">نمودار شکل ۷-۶ هنوز به داده عددی کالیبره‌شده تبدیل نشده است؛ بنابراین این فیلد فعلاً ورودی دستی است و برنامه نباید آن را مقدار آیین‌نامه‌ای قطعی معرفی کند. در نسخه بعدی، نقاط منحنی از روی شکل اصلی استخراج و کنترل خواهند شد.</div>${referenceButton('fuller','بازبینی جدول ۵-۶')}`}
-function renderStep8(){return `<h2>گام نهم ـ تعیین مقدار و ترکیب خمیر</h2><p class="intro">این گام شامل تعیین آب، پودر، سیمان، مواد جایگزین سیمان، پودر خنثی و هواست. روابط و جداول این گام باید قبل از فعال شدن محاسبه نهایی به‌طور کامل استخراج شوند.</p><div class="empty-state">زیرساخت صفحه آماده است؛ محاسبات عددی این گام تا استخراج دقیق جدول‌های ۷-۶ تا ۱۱-۶ فعال نمی‌شود تا عدد حدسی وارد طرح نشود.</div>`}
-function renderStep9(){return `<h2>گام دهم ـ تعیین مقدار سنگدانه‌ها</h2><p class="intro">در این گام حجم مطلق اجزای خمیر و هوا از حجم یک مترمکعب بتن کسر و مقدار سنگدانه ریز و درشت تعیین می‌شود.</p><div class="empty-state">محاسبات این صفحه پس از تکمیل گام‌های هشتم و نهم فعال می‌شود. اطلاعات SSD، جذب آب و رطوبت نیز در اصلاح مقادیر بچینگ استفاده خواهد شد.</div>`}
+function renderStep8(){return `<h2>تعیین مقدار و ترکیب خمیر</h2><p class="intro">این گام شامل تعیین آب، پودر، سیمان، مواد جایگزین سیمان، پودر خنثی و هواست. روابط و جداول این گام باید قبل از فعال شدن محاسبه نهایی به‌طور کامل استخراج شوند.</p><div class="empty-state">زیرساخت صفحه آماده است؛ محاسبات عددی این گام تا استخراج دقیق جدول‌های ۷-۶ تا ۱۱-۶ فعال نمی‌شود تا عدد حدسی وارد طرح نشود.</div>`}
+function renderStep9(){return `<h2>تعیین مقدار سنگدانه‌ها</h2><p class="intro">در این گام حجم مطلق اجزای خمیر و هوا از حجم یک مترمکعب بتن کسر و مقدار سنگدانه ریز و درشت تعیین می‌شود.</p><div class="empty-state">محاسبات این صفحه پس از تکمیل گام‌های هشتم و نهم فعال می‌شود. اطلاعات SSD، جذب آب و رطوبت نیز در اصلاح مقادیر بچینگ استفاده خواهد شد.</div>`}
 function renderStep10(){return `<h2>گزارش نهایی طرح اختلاط</h2><p class="intro">گزارش فعلی، داده‌های تکمیل‌شده و وضعیت محاسبات را نشان می‌دهد. تا زمان تکمیل و تأیید تمام گام‌ها، این گزارش طرح اجرایی نهایی محسوب نمی‌شود.</p>
 <div class="result-grid">${result('پروژه',esc(state.projectName||'بدون نام'))}${result('رده اسلامپ',state.slumpClass)}${result('حداکثر اندازه سنگدانه',state.maxAggSize,'mm')}${result('فضای خالی',fmt(state.voids,2),'%')}${result('حجم خمیر پایه',fmt(state.pasteBase,2),'%')}${result('حجم خمیر نهایی',fmt(state.pasteFinal,2),'%')}</div>
 ${tableHtml({title:'وضعیت تکمیل مراحل',columns:['مرحله','وضعیت'],rows:STEPS.map((s,i)=>[s,i<=5?'زیرساخت اولیه؛ نیازمند کنترل ورودی/آزمایش':i===6?'ورودی دستی؛ نیازمند استخراج نمودار': 'در دست تکمیل'])})}
