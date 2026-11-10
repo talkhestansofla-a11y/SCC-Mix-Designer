@@ -3,3 +3,37 @@
 @media(max-width:600px){.app-header{padding:14px 12px}.brand-row h1{font-size:15px}.brand-mark{width:46px;height:46px}.offline-label{font-size:10px}.app-main{padding:10px}.screen{padding:14px;min-height:400px}.input-grid{grid-template-columns:1fr}.result-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.step-tab{padding:7px 10px}.screen h2{font-size:15px}}
 @media print{body{background:#fff}.app-header,.step-tabs,.actions,.project-strip,.app-footer,.reference-btn{display:none!important}.app-main{width:100%;padding:0}.screen{box-shadow:none;border:0;padding:0}.modal{display:none!important}}
 .reference-image{display:block;width:100%;height:auto;max-height:65vh;object-fit:contain;background:#fff;border:1px solid #dbe4ea;border-radius:8px;margin:8px 0 14px}
+
+/* اصلاحات چیدمان فرم‌ها و جدول سنگدانه */
+.field{display:grid;grid-template-columns:minmax(0,1fr) minmax(118px,1fr);align-items:center;column-gap:10px;row-gap:3px}
+.field label{margin:0;line-height:1.45}
+.field input,.field select{min-width:0}
+.field small{grid-column:1/-1;margin-top:1px}
+.field.full{grid-column:1/-1}
+.field-control{display:flex;align-items:center;gap:5px;min-width:0}
+.field-control input,.field-control select{flex:1;min-width:0;width:100%}
+.reference-icon-btn{flex:0 0 36px;width:36px;height:36px;border:1px solid #b8ccd7;border-radius:8px;background:#f3f8fa;color:#17465e;font-size:18px;line-height:1;cursor:pointer;display:grid;place-items:center}
+.reference-icon-btn:active{transform:scale(.96);background:#e4f0f4}
+.formula-panel{background:#eef7fa;border:1px solid #cfe2ea;border-right:4px solid #0f766e;border-radius:10px;padding:10px 12px;color:#21485c;font-size:12px;line-height:2}
+.formula-panel div{display:flex;flex-wrap:wrap;align-items:center;gap:7px}
+.formula-panel b{color:#08745f;direction:ltr;margin-right:auto}
+.formula-panel small{display:block;color:#617383;font-size:10px;margin-top:3px}
+.target-strength input{background:#f0f8f5;font-weight:800;color:#0b655f}
+.aggregate-table-wrap{margin-top:8px}
+.aggregate-table{min-width:0;width:100%;table-layout:fixed;font-size:10px}
+.aggregate-table .spec-col{width:82px}
+.aggregate-table th,.aggregate-table td{padding:4px 3px;font-size:10px;overflow:hidden}
+.aggregate-table th:first-child{text-align:center;white-space:normal}
+.aggregate-table input{width:100%;min-width:0;height:32px;padding:3px 2px;font-size:10px}
+.aggregate-table th input{width:100%!important;min-width:0;padding:3px 1px;font-size:10px;text-align:center}
+.aggregate-table thead th{font-size:10px}
+@media(max-width:600px){
+ .field{grid-template-columns:minmax(0,1fr) minmax(112px,1fr);gap:7px}
+ .field label{font-size:10px}
+ .field input,.field select{min-height:38px;padding:6px 7px;font-size:12px}
+ .reference-icon-btn{width:34px;height:34px;flex-basis:34px}
+ .aggregate-table .spec-col{width:72px}
+ .aggregate-table th,.aggregate-table td{padding:3px 2px;font-size:9px}
+ .aggregate-table input{height:30px;font-size:9px}
+ .aggregate-table th input{font-size:9px}
+}
